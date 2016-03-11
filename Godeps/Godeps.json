@@ -1,0 +1,15 @@
+{
+	"ImportPath": "github.com/percona/platform/prom-config-api",
+	"GoVersion": "go1.5",
+	"Deps": [
+		{
+			"ImportPath": "github.com/julienschmidt/httprouter",
+			"Comment": "v1.1-29-g77366a4",
+			"Rev": "77366a47451a56bb3ba682481eed85b64fea14e8"
+		},
+		{
+			"ImportPath": "gopkg.in/yaml.v2",
+			"Rev": "a83829b6f1293c91addabc89d0571c246397bbf4"
+		}
+	]
+}

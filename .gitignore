@@ -1,0 +1,9 @@
+*.swp
+*.tmp
+*.dump
+coverage.out
+todo/
+tmp/
+vendor/
+distro/
+prom-config-api
