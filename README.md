@@ -1,7 +1,7 @@
 prom-config-api
 ===============
 
-This is a tiny API that allows clients to remotely list, add, and remove hosts on a Prometheus server using [file-based service discovery](https://prometheus.io/docs/operating/configuration/#<file_sd_config>).
+This is a tiny API that allows clients to remotely list, add, and remove hosts on a Prometheus server using file-based service discovery.
 
 Defaults that can be overriden with environment variables:
 
