@@ -1,4 +1,4 @@
-package main
+package prom
 
 import (
 	"errors"
@@ -19,11 +19,11 @@ type Target struct {
 
 type TargetsFile struct {
 	hostsFile string
-	targets   []Target
+	targets   map[string][]Target
 	*sync.Mutex
 }
 
-func NewTargetsFile(hostsFile string, targets []Target) *TargetsFile {
+func NewTargetsFile(hostsFile string, targets map[string][]Target) *TargetsFile {
 	f := &TargetsFile{
 		hostsFile: hostsFile,
 		targets:   targets,
@@ -32,14 +32,14 @@ func NewTargetsFile(hostsFile string, targets []Target) *TargetsFile {
 	return f
 }
 
-func (f *TargetsFile) List() ([]Host, error) {
+func (f *TargetsFile) List() (map[string][]Host, error) {
 	f.Lock()
 	defer f.Unlock()
 
 	return f.open()
 }
 
-func (f *TargetsFile) Add(host Host) error {
+func (f *TargetsFile) Add(hostType string, host Host) error {
 	f.Lock()
 	defer f.Unlock()
 
@@ -48,12 +48,12 @@ func (f *TargetsFile) Add(host Host) error {
 		return err
 	}
 
-	hosts = append(hosts, host)
+	hosts[hostType] = append(hosts[hostType], host)
 
 	return f.writeFiles(hosts)
 }
 
-func (f *TargetsFile) Remove(alias string) error {
+func (f *TargetsFile) Remove(hostType, alias string) error {
 	f.Lock()
 	defer f.Unlock()
 
@@ -62,11 +62,11 @@ func (f *TargetsFile) Remove(alias string) error {
 		return err
 	}
 
-	for i, host := range hosts {
+	for i, host := range hosts[hostType] {
 		if host.Alias != alias {
 			continue
 		}
-		hosts = append(hosts[:i], hosts[i+1:]...)
+		hosts[hostType] = append(hosts[hostType][:i], hosts[hostType][i+1:]...)
 		return f.writeFiles(hosts)
 	}
 
@@ -75,13 +75,13 @@ func (f *TargetsFile) Remove(alias string) error {
 
 // --------------------------------------------------------------------------
 
-func (f *TargetsFile) open() ([]Host, error) {
+func (f *TargetsFile) open() (map[string][]Host, error) {
 	yamlData, err := ioutil.ReadFile(f.hostsFile)
 	if err != nil {
 		return nil, err
 	}
 
-	hosts := []Host{}
+	hosts := map[string][]Host{}
 	if err := yaml.Unmarshal(yamlData, &hosts); err != nil {
 		return nil, err
 	}
@@ -89,24 +89,26 @@ func (f *TargetsFile) open() ([]Host, error) {
 	return hosts, nil
 }
 
-func (f *TargetsFile) writeFiles(hosts []Host) error {
+func (f *TargetsFile) writeFiles(hosts map[string][]Host) error {
 	yamlData, _ := yaml.Marshal(&hosts)
 	if err := ioutil.WriteFile(f.hostsFile, yamlData, 0644); err != nil {
 		return err
 	}
 
-	for _, target := range f.targets {
-		var endPoints []Endpoint
-		for _, host := range hosts {
-			ep := Endpoint{
-				Targets: []string{host.Address + ":" + target.Port},
-				Labels:  map[string]string{"alias": host.Alias},
+	for hostType, targets := range f.targets {
+		for _, target := range targets {
+			var endPoints []Endpoint
+			for _, host := range hosts[hostType] {
+				ep := Endpoint{
+					Targets: []string{host.Address + ":" + target.Port},
+					Labels:  map[string]string{"alias": host.Alias},
+				}
+				endPoints = append(endPoints, ep)
 			}
-			endPoints = append(endPoints, ep)
-		}
-		yamlData, _ = yaml.Marshal(&endPoints)
-		if err := ioutil.WriteFile(target.Filename, yamlData, 0644); err != nil {
-			return err
+			yamlData, _ = yaml.Marshal(&endPoints)
+			if err := ioutil.WriteFile(target.Filename, yamlData, 0644); err != nil {
+				return err
+			}
 		}
 	}
 

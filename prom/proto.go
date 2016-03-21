@@ -1,4 +1,6 @@
-package main
+package prom
+
+var HostTypes = []string{"os", "mysql"}
 
 type Host struct {
 	Alias   string
