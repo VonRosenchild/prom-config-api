@@ -11,8 +11,10 @@ Defaults that can be overriden with environment variables:
 Routes:
 
 * `GET /hosts`
-* `POST /hosts`
-* `DELETE /hosts/{alias}`
+* `POST /hosts/{type}`
+* `DELETE /hosts/{type}/{alias}`
+
+Host types are `os` and `mysql`.
 
 Data to `POST /hosts`:
 
