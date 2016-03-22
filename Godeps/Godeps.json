@@ -1,5 +1,5 @@
 {
-	"ImportPath": "github.com/percona/platform/prom-config-api",
+	"ImportPath": "github.com/percona/prom-config-api",
 	"GoVersion": "go1.5",
 	"Deps": [
 		{
