@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"sync"
 
+	"github.com/percona/platform/proto"
 	"gopkg.in/yaml.v2"
 )
 
@@ -32,14 +33,14 @@ func NewTargetsFile(hostsFile string, targets map[string][]Target) *TargetsFile 
 	return f
 }
 
-func (f *TargetsFile) List() (map[string][]Host, error) {
+func (f *TargetsFile) List() (map[string][]proto.Host, error) {
 	f.Lock()
 	defer f.Unlock()
 
 	return f.open()
 }
 
-func (f *TargetsFile) Add(hostType string, host Host) error {
+func (f *TargetsFile) Add(hostType string, host proto.Host) error {
 	f.Lock()
 	defer f.Unlock()
 
@@ -75,13 +76,13 @@ func (f *TargetsFile) Remove(hostType, alias string) error {
 
 // --------------------------------------------------------------------------
 
-func (f *TargetsFile) open() (map[string][]Host, error) {
+func (f *TargetsFile) open() (map[string][]proto.Host, error) {
 	yamlData, err := ioutil.ReadFile(f.hostsFile)
 	if err != nil {
 		return nil, err
 	}
 
-	hosts := map[string][]Host{}
+	hosts := map[string][]proto.Host{}
 	if err := yaml.Unmarshal(yamlData, &hosts); err != nil {
 		return nil, err
 	}
@@ -89,7 +90,7 @@ func (f *TargetsFile) open() (map[string][]Host, error) {
 	return hosts, nil
 }
 
-func (f *TargetsFile) writeFiles(hosts map[string][]Host) error {
+func (f *TargetsFile) writeFiles(hosts map[string][]proto.Host) error {
 	yamlData, _ := yaml.Marshal(&hosts)
 	if err := ioutil.WriteFile(f.hostsFile, yamlData, 0644); err != nil {
 		return err
@@ -97,9 +98,9 @@ func (f *TargetsFile) writeFiles(hosts map[string][]Host) error {
 
 	for hostType, targets := range f.targets {
 		for _, target := range targets {
-			var endPoints []Endpoint
+			var endPoints []proto.Endpoint
 			for _, host := range hosts[hostType] {
-				ep := Endpoint{
+				ep := proto.Endpoint{
 					Targets: []string{host.Address + ":" + target.Port},
 					Labels:  map[string]string{"alias": host.Alias},
 				}
