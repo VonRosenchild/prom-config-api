@@ -10,6 +10,10 @@
 		{
 			"ImportPath": "gopkg.in/yaml.v2",
 			"Rev": "a83829b6f1293c91addabc89d0571c246397bbf4"
+		},
+		{
+			"ImportPath": "github.com/percona/platform/proto",
+			"Rev": "a9b4d1e86b058c9283035509f27d55b679ec798a"
 		}
 	]
 }
