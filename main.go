@@ -2,6 +2,8 @@ package main
 
 import (
 	"encoding/json"
+	"flag"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -14,29 +16,41 @@ import (
 )
 
 var (
-	LISTEN      = ":" + proto.DEFAULT_PROM_CONFIG_API_PORT
-	PROMDIR     = "/opt/prometheus"
-	OS_PORTS    = []string{"9100"}
-	MYSQL_PORTS = []string{"9104", "9105", "9106"}
+	DEFAULT_flagListen = ":" + proto.DEFAULT_PROM_CONFIG_API_PORT
+	DEFAULT_BASEDIR    = "/opt/prometheus"
 )
 
-var tf *prom.TargetsFile
+var (
+	flagBasedir string
+	flagListen  string
+	flagVersion bool
+)
 
 func init() {
-	if listen := os.Getenv("LISTEN"); listen != "" {
-		LISTEN = listen
-	}
-	if promdir := os.Getenv("PROMDIR"); promdir != "" {
-		PROMDIR = promdir
-	}
+	flag.StringVar(&flagBasedir, "basedir", DEFAULT_BASEDIR, "Dir to use for hosts.yml and target files")
+	flag.StringVar(&flagListen, "listen", DEFAULT_flagListen, "IP:port to listen on")
+	flag.BoolVar(&flagVersion, "version", false, "Print version")
+	flag.Parse()
 }
 
+var (
+	VERSION     = "1.0.0"
+	OS_PORTS    = []string{"9100"}
+	MYSQL_PORTS = []string{"9104", "9105", "9106"}
+	tf          *prom.TargetsFile
+)
+
 func main() {
-	if _, err := os.Stat(PROMDIR); err != nil {
+	if flagVersion {
+		fmt.Printf("prom-config-api %s\n", VERSION)
+		os.Exit(0)
+	}
+
+	if _, err := os.Stat(flagBasedir); err != nil {
 		log.Fatal(err)
 	}
 
-	hostsFile := path.Join(PROMDIR, "hosts.yml")
+	hostsFile := path.Join(flagBasedir, "hosts.yml")
 	if _, err := os.Stat(hostsFile); err != nil {
 		f, err := os.Create(hostsFile)
 		if err != nil {
@@ -51,13 +65,13 @@ func main() {
 	for i, port := range OS_PORTS {
 		targets["os"][i] = prom.Target{
 			Port:     port,
-			Filename: path.Join(PROMDIR, "targets_"+port+".yml"),
+			Filename: path.Join(flagBasedir, "targets_"+port+".yml"),
 		}
 	}
 	for i, port := range MYSQL_PORTS {
 		targets["mysql"][i] = prom.Target{
 			Port:     port,
-			Filename: path.Join(PROMDIR, "targets_"+port+".yml"),
+			Filename: path.Join(flagBasedir, "targets_"+port+".yml"),
 		}
 	}
 	tf = prom.NewTargetsFile(hostsFile, targets)
@@ -67,7 +81,7 @@ func main() {
 	router.POST("/hosts/:type", add)
 	router.DELETE("/hosts/:type/:alias", remove)
 
-	log.Fatal(http.ListenAndServe(LISTEN, router))
+	log.Fatal(http.ListenAndServe(flagListen, router))
 }
 
 func list(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
