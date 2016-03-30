@@ -46,6 +46,8 @@ func main() {
 		os.Exit(0)
 	}
 
+	log.Println("INFO: prom-config-api", VERSION, "basedir", flagBasedir)
+
 	if _, err := os.Stat(flagBasedir); err != nil {
 		log.Fatal(err)
 	}
@@ -81,12 +83,14 @@ func main() {
 	router.POST("/hosts/:type", add)
 	router.DELETE("/hosts/:type/:alias", remove)
 
+	log.Printf("INFO: listening on %s...", flagListen)
 	log.Fatal(http.ListenAndServe(flagListen, router))
 }
 
 func list(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	hosts, err := tf.List()
 	if err != nil {
+		log.Println("ERROR: list: tf.List:", err)
 		proto.ErrorResponse(w, err)
 	} else {
 		proto.JSONResponse(w, http.StatusOK, hosts)
@@ -96,6 +100,7 @@ func list(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 func add(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 	body, err := ioutil.ReadAll(r.Body)
 	if err != nil {
+		log.Println("ERROR: add: ioutil.ReadAll:", err)
 		proto.ErrorResponse(w, err)
 		return
 	}
@@ -105,6 +110,7 @@ func add(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 	}
 	var host proto.Host
 	if err := json.Unmarshal(body, &host); err != nil {
+		log.Println("ERROR: add: json.Unmarshal:", err)
 		proto.ErrorResponse(w, err)
 		return
 	}
@@ -112,11 +118,12 @@ func add(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 	hostType := p.ByName("type")
 
 	if err := tf.Add(hostType, host); err != nil {
+		log.Println("ERROR: add: tf.Add:", err)
 		proto.ErrorResponse(w, err)
 	} else {
+		log.Printf("INFO: added %s %+v", hostType, host)
 		proto.JSONResponse(w, http.StatusCreated, nil)
 	}
-	log.Printf("Added %s %+v", hostType, host)
 }
 
 func remove(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
@@ -127,10 +134,11 @@ func remove(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 		if err == prom.ErrHostNotFound {
 			http.NotFound(w, r)
 		} else {
+			log.Println("ERROR: remove: tf.Remove:", err)
 			proto.ErrorResponse(w, err)
 		}
 	} else {
+		log.Printf("INFO: removed %s", alias)
 		proto.JSONResponse(w, http.StatusOK, nil)
 	}
-	log.Printf("Removed %s", alias)
 }
