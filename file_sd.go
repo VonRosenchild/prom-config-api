@@ -1,4 +1,4 @@
-package prom
+package main
 
 import (
 	"errors"
@@ -11,6 +11,7 @@ import (
 
 var (
 	ErrHostNotFound = errors.New("host not found")
+	ErrDupeHost     = errors.New("duplicate host")
 )
 
 type Target struct {
@@ -47,6 +48,12 @@ func (f *TargetsFile) Add(hostType string, host proto.Host) error {
 	hosts, err := f.open()
 	if err != nil {
 		return err
+	}
+
+	for _, h := range hosts[hostType] {
+		if h.Alias == host.Alias {
+			return ErrDupeHost
+		}
 	}
 
 	hosts[hostType] = append(hosts[hostType], host)

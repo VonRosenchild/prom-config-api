@@ -12,7 +12,6 @@ import (
 
 	"github.com/julienschmidt/httprouter"
 	"github.com/percona/platform/proto"
-	"github.com/percona/prom-config-api/prom"
 )
 
 var (
@@ -37,7 +36,7 @@ var (
 	VERSION     = "1.0.0"
 	OS_PORTS    = []string{"9100"}
 	MYSQL_PORTS = []string{"9104", "9105", "9106"}
-	tf          *prom.TargetsFile
+	tf          *TargetsFile
 )
 
 func main() {
@@ -60,23 +59,23 @@ func main() {
 		}
 		f.Close()
 	}
-	targets := map[string][]prom.Target{
-		"os":    make([]prom.Target, len(OS_PORTS)),
-		"mysql": make([]prom.Target, len(MYSQL_PORTS)),
+	targets := map[string][]Target{
+		"os":    make([]Target, len(OS_PORTS)),
+		"mysql": make([]Target, len(MYSQL_PORTS)),
 	}
 	for i, port := range OS_PORTS {
-		targets["os"][i] = prom.Target{
+		targets["os"][i] = Target{
 			Port:     port,
 			Filename: path.Join(flagBasedir, "targets_"+port+".yml"),
 		}
 	}
 	for i, port := range MYSQL_PORTS {
-		targets["mysql"][i] = prom.Target{
+		targets["mysql"][i] = Target{
 			Port:     port,
 			Filename: path.Join(flagBasedir, "targets_"+port+".yml"),
 		}
 	}
-	tf = prom.NewTargetsFile(hostsFile, targets)
+	tf = NewTargetsFile(hostsFile, targets)
 
 	router := httprouter.New()
 	router.GET("/hosts", list)
@@ -118,8 +117,13 @@ func add(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 	hostType := p.ByName("type")
 
 	if err := tf.Add(hostType, host); err != nil {
-		log.Println("ERROR: add: tf.Add:", err)
-		proto.ErrorResponse(w, err)
+		switch err {
+		case ErrDupeHost:
+			proto.JSONResponse(w, http.StatusConflict, nil)
+		default:
+			log.Println("ERROR: add: tf.Add:", err)
+			proto.ErrorResponse(w, err)
+		}
 	} else {
 		log.Printf("INFO: added %s %+v", hostType, host)
 		proto.JSONResponse(w, http.StatusCreated, nil)
@@ -131,7 +135,7 @@ func remove(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 	alias := p.ByName("alias")
 	err := tf.Remove(hostType, alias)
 	if err != nil {
-		if err == prom.ErrHostNotFound {
+		if err == ErrHostNotFound {
 			http.NotFound(w, r)
 		} else {
 			log.Println("ERROR: remove: tf.Remove:", err)
