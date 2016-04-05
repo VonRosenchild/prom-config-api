@@ -16,7 +16,7 @@ import (
 
 var (
 	DEFAULT_flagListen = ":" + proto.DEFAULT_PROM_CONFIG_API_PORT
-	DEFAULT_BASEDIR    = "/opt/prometheus"
+	DEFAULT_BASEDIR    = "/opt/prometheus/targets"
 )
 
 var (
@@ -66,13 +66,13 @@ func main() {
 	for i, port := range OS_PORTS {
 		targets["os"][i] = Target{
 			Port:     port,
-			Filename: path.Join(flagBasedir, "targets_"+port+".yml"),
+			Filename: path.Join(flagBasedir, port+".yml"),
 		}
 	}
 	for i, port := range MYSQL_PORTS {
 		targets["mysql"][i] = Target{
 			Port:     port,
-			Filename: path.Join(flagBasedir, "targets_"+port+".yml"),
+			Filename: path.Join(flagBasedir, port+".yml"),
 		}
 	}
 	tf = NewTargetsFile(hostsFile, targets)
