@@ -1,27 +1,5 @@
 prom-config-api
 ===============
 
-This is a tiny API that allows clients to remotely list, add, and remove hosts on a Prometheus server using file-based service discovery.
-
-Defaults that can be overriden with environment variables:
-
-* `LISTEN=:9003`
-* `PROMDIR=/opt/prometheus`
-
-Routes:
-
-* `GET /hosts`
-* `POST /hosts/{type}`
-* `DELETE /hosts/{type}/{alias}`
-
-Host types are `os` and `mysql`.
-
-Data to `POST /hosts`:
-
-```js
-{
-   "Address": "10.0.0.5",
-   "Alias": "prod-db01"
-}
-```
-
+This is an API that allows clients to remotely list, add, and remove hosts on a Prometheus server using file-based service discovery.
+See the [PMM docs](https://www.percona.com/doc/percona-monitoring-and-management/index.html) for more information.
